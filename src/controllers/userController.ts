@@ -1,6 +1,9 @@
 import { Request, Response } from 'express'
 import { UserModel } from '../models/user'
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
+import dotenv from 'dotenv'
+dotenv.config()
 
 export class UserController {
   static async getAll(_req: Request, res: Response) {
@@ -69,14 +72,22 @@ export class UserController {
         return res.status(401).json({ success: false, message: 'Invalid credentials' })
       }
 
+      const secret = process.env.JWT_SECRET || 'defaultsecret'
+      const token = jwt.sign(
+        { id: user.id, email: user.email, name: user.name },
+        secret,
+        { expiresIn: '1h' }
+      )
+
       res.status(200).json({
         success: true,
         message: 'Login successful',
+        token,
         data: {
           id: user.id,
           name: user.name,
-          email: user.email,
-        },
+          email: user.email
+        }
       })
     } catch (error) {
       console.error('Error logging in:', error)
