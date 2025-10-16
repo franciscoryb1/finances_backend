@@ -7,3 +7,23 @@ cmd /c "docker exec -i finances_postgres psql -U admin -d finances_db < init.sql
 -- Verificar que este todo creado:
 docker exec -it finances_postgres psql -U admin -d finances_db -c "\dt"
 
+
+-- Ver contenedores corriendo:
+docker ps
+-- Ver todos los contenedores (incluso los detenidos):
+docker ps -a
+- Ver imágenes disponibles
+docker images
+
+-- Levantar tu contenedor con docker-compose
+docker-compose up -d
+-d significa detached mode → corre en segundo plano.
+
+-- Detener todos los contenedores
+docker-compose down
+
+-- Detener contenedor especifico
+docker stop finances_postgres
+
+-- Reiniciar el contenedor
+docker restart finances_postgres
