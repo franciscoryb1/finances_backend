@@ -1,0 +1,9 @@
+-- Crear bbdd con init.sql
+docker exec -i finances_postgres psql -U admin -d finances_db < init.sql
+Powershell: Get-Content .\init.sql | docker exec -i finances_postgres psql -U admin -d finances_db
+cmd /c "docker exec -i finances_postgres psql -U admin -d finances_db < init.sql"
+
+
+-- Verificar que este todo creado:
+docker exec -it finances_postgres psql -U admin -d finances_db -c "\dt"
+
