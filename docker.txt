@@ -27,3 +27,11 @@ docker stop finances_postgres
 
 -- Reiniciar el contenedor
 docker restart finances_postgres
+
+-- Ejecutar consulta SQL
+docker exec -it finances_postgres psql -U admin -d finances_db -c "ALTER TABLE banks ADD COLUMN user_id INT REFERENCES users(id) ON DELETE CASCADE;"
+docker exec -it finances_postgres → ejecuta dentro del contenedor activo.
+
+psql -U admin -d finances_db → abre el cliente de PostgreSQL con el usuario admin y la base finances_db.
+
+-c "..." → ejecuta el comando SQL entre comillas.
