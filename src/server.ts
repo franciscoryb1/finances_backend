@@ -2,6 +2,7 @@ import express from 'express'
 import dotenv from 'dotenv'
 import { pool } from './config/db'
 import userRoutes from './routes/userRoutes'
+import bankRoutes from './routes/bankRoutes'
 
 dotenv.config()
 
@@ -19,6 +20,8 @@ app.get('/', async (_req, res) => {
 
 // Users
 app.use('/api/users', userRoutes)
+// Banks
+app.use('/api/banks', bankRoutes)
 
 
 const PORT = process.env.PORT || 5000
