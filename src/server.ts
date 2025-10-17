@@ -4,6 +4,7 @@ import { pool } from './config/db'
 import userRoutes from './routes/userRoutes'
 import bankRoutes from './routes/bankRoutes'
 import accountRoutes from './routes/accountRoutes'
+import creditCardRoutes from './routes/creditCardRoutes'
 
 dotenv.config()
 
@@ -25,6 +26,8 @@ app.use('/api/users', userRoutes)
 app.use('/api/banks', bankRoutes)
 // Accounts
 app.use('/api/accounts', accountRoutes)
+// Cards
+app.use('/api/cards', creditCardRoutes)
 
 
 const PORT = process.env.PORT || 5000
