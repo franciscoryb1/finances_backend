@@ -9,6 +9,7 @@ import categoryRoutes from './routes/categoryRoutes'
 import transactionRoutes from './routes/transactionRoutes'
 import creditCardStatementRoutes from './routes/creditCardStatementRoutes'
 import installmentRoutes from './routes/installmentRoutes'
+import { errorHandler } from './middleware/errorHandler'
 
 dotenv.config()
 
@@ -41,6 +42,7 @@ app.use('/api/statements', creditCardStatementRoutes)
 // Installment
 app.use('/api/installments', installmentRoutes)
 
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}/`))
