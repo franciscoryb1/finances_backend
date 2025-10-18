@@ -5,6 +5,7 @@ import userRoutes from './routes/userRoutes'
 import bankRoutes from './routes/bankRoutes'
 import accountRoutes from './routes/accountRoutes'
 import creditCardRoutes from './routes/creditCardRoutes'
+import categoryRoutes from './routes/categoryRoutes'
 
 dotenv.config()
 
@@ -28,6 +29,8 @@ app.use('/api/banks', bankRoutes)
 app.use('/api/accounts', accountRoutes)
 // Cards
 app.use('/api/cards', creditCardRoutes)
+// Categories
+app.use('/api/categories', categoryRoutes)
 
 
 const PORT = process.env.PORT || 5000
