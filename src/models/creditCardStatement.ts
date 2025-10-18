@@ -53,13 +53,13 @@ export class CreditCardStatementModel {
   static async update(id: number, statement: Partial<CreditCardStatement>): Promise<CreditCardStatement | null> {
     const result: QueryResult<CreditCardStatement> = await pool.query(
       `UPDATE credit_card_statements
-       SET period_start = $1,
-           period_end = $2,
-           due_date = $3,
-           total_amount = $4,
-           paid_amount = $5,
-           status = $6,
-           is_active = $7
+       SET period_start = COALESCE($1, period_start),
+           period_end = COALESCE($2, period_end),
+           due_date = COALESCE($3, due_date),
+           total_amount = COALESCE($4, total_amount),
+           paid_amount = COALESCE($5, paid_amount),
+           status = COALESCE($6, status),
+           is_active = COALESCE($7, is_active)
        WHERE id = $8
        RETURNING *`,
       [
@@ -73,7 +73,23 @@ export class CreditCardStatementModel {
         id
       ]
     )
-    return result.rows[0] || null
+
+    const updated = result.rows[0]
+
+    if (updated && updated.status === 'paid') {
+      await this.markInstallmentsAsPaid(updated.id!)
+    }
+
+    return updated || null
+  }
+
+  static async markInstallmentsAsPaid(statementId: number): Promise<void> {
+    await pool.query(
+      `UPDATE installments 
+       SET paid = TRUE 
+       WHERE statement_id = $1 AND is_active = TRUE`,
+      [statementId]
+    )
   }
 
   static async delete(id: number): Promise<boolean> {
