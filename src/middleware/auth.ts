@@ -4,24 +4,29 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-// Creo una interfaz extendida que incluya user
+// Extiende Request para incluir el usuario autenticado
 export interface AuthRequest extends Request {
   user?: any
 }
 
-export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Access denied. Token missing.' })
-  }
-
-  const token = authHeader.split(' ')[1]
+export const verifyToken = (req: AuthRequest, _res: Response, next: NextFunction) => {
   try {
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw { status: 401, message: 'Access denied. Token missing.' }
+    }
+
+    const token = authHeader.split(' ')[1]
     const secret = process.env.JWT_SECRET || 'defaultsecret'
-    const decoded = jwt.verify(token, secret)
-    req.user = decoded
-    next()
-  } catch {
-    return res.status(403).json({ success: false, message: 'Invalid or expired token.' })
+
+    try {
+      const decoded = jwt.verify(token, secret)
+      req.user = decoded
+      next()
+    } catch {
+      throw { status: 403, message: 'Invalid or expired token.' }
+    }
+  } catch (error) {
+    next(error)
   }
 }

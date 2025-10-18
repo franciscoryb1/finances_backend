@@ -26,12 +26,13 @@ export class CreditCardModel {
     return result.rows
   }
 
-  static async getById(id: number, userId: number): Promise<CreditCard | null> {
+  static async getById(id: number, userId: number): Promise<CreditCard> {
     const result: QueryResult<CreditCard> = await pool.query(
       'SELECT * FROM credit_cards WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Credit card not found' }
+    return result.rows[0]
   }
 
   static async create(card: CreditCard): Promise<CreditCard> {
@@ -49,10 +50,11 @@ export class CreditCardModel {
         card.expiration_date || null
       ]
     )
+    if (result.rowCount === 0) throw { status: 400, message: 'Credit card creation failed' }
     return result.rows[0]
   }
 
-  static async update(id: number, userId: number, card: Partial<CreditCard>): Promise<CreditCard | null> {
+  static async update(id: number, userId: number, card: Partial<CreditCard>): Promise<CreditCard> {
     const result: QueryResult<CreditCard> = await pool.query(
       `UPDATE credit_cards
        SET bank_id = $1, name = $2, brand = $3, limit_amount = $4, balance = $5, expiration_date = $6, is_active = $7
@@ -70,22 +72,23 @@ export class CreditCardModel {
         userId
       ]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Credit card not found' }
+    return result.rows[0]
   }
 
-  static async deactivate(id: number, userId: number): Promise<boolean> {
+  static async deactivate(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
       'UPDATE credit_cards SET is_active = false WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Credit card not found' }
   }
 
-  static async restore(id: number, userId: number): Promise<boolean> {
+  static async restore(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
       'UPDATE credit_cards SET is_active = true WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Credit card not found' }
   }
 }

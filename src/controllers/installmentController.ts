@@ -1,43 +1,63 @@
-import { Request, Response } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import { InstallmentModel } from '../models/installment'
 
 export class InstallmentController {
-  static async getAllByTransaction(req: Request, res: Response) {
-    const transactionId = parseInt(req.params.transactionId)
-    const installments = await InstallmentModel.getAllByTransaction(transactionId)
-    res.json(installments)
+  static async getAllByTransaction(req: Request, res: Response, next: NextFunction) {
+    try {
+      const transactionId = parseInt(req.params.transactionId)
+      const installments = await InstallmentModel.getAllByTransaction(transactionId)
+      res.json(installments)
+    } catch (error) {
+      next(error)
+    }
   }
 
-  static async getById(req: Request, res: Response) {
-    const id = parseInt(req.params.id)
-    const installment = await InstallmentModel.getById(id)
-    if (!installment) return res.status(404).json({ message: 'Installment not found' })
-    res.json(installment)
+  static async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id)
+      const installment = await InstallmentModel.getById(id)
+      res.json(installment)
+    } catch (error) {
+      next(error)
+    }
   }
 
-  static async create(req: Request, res: Response) {
-    const newInstallment = await InstallmentModel.create(req.body)
-    res.status(201).json(newInstallment)
+  static async create(req: Request, res: Response, next: NextFunction) {
+    try {
+      const newInstallment = await InstallmentModel.create(req.body)
+      res.status(201).json(newInstallment)
+    } catch (error) {
+      next(error)
+    }
   }
 
-  static async markAsPaid(req: Request, res: Response) {
-    const id = parseInt(req.params.id)
-    const success = await InstallmentModel.markAsPaid(id)
-    if (!success) return res.status(404).json({ message: 'Installment not found' })
-    res.json({ message: 'Installment marked as paid' })
+  static async markAsPaid(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id)
+      await InstallmentModel.markAsPaid(id)
+      res.json({ message: 'Installment marked as paid' })
+    } catch (error) {
+      next(error)
+    }
   }
 
-  static async deactivate(req: Request, res: Response) {
-    const id = parseInt(req.params.id)
-    const success = await InstallmentModel.deactivate(id)
-    if (!success) return res.status(404).json({ message: 'Installment not found' })
-    res.json({ message: 'Installment deactivated' })
+  static async deactivate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id)
+      await InstallmentModel.deactivate(id)
+      res.json({ message: 'Installment deactivated' })
+    } catch (error) {
+      next(error)
+    }
   }
 
-  static async restore(req: Request, res: Response) {
-    const id = parseInt(req.params.id)
-    const success = await InstallmentModel.restore(id)
-    if (!success) return res.status(404).json({ message: 'Installment not found' })
-    res.json({ message: 'Installment restored' })
+  static async restore(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id)
+      await InstallmentModel.restore(id)
+      res.json({ message: 'Installment restored' })
+    } catch (error) {
+      next(error)
+    }
   }
 }

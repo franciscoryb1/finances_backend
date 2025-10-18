@@ -23,20 +23,21 @@ export class CreditCardStatementModel {
     return result.rows
   }
 
-  static async getById(id: number): Promise<CreditCardStatement | null> {
+  static async getById(id: number): Promise<CreditCardStatement> {
     const result: QueryResult<CreditCardStatement> = await pool.query(
       'SELECT * FROM credit_card_statements WHERE id = $1',
       [id]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Statement not found' }
+    return result.rows[0]
   }
 
   static async create(statement: CreditCardStatement): Promise<CreditCardStatement> {
     const result: QueryResult<CreditCardStatement> = await pool.query(
       `INSERT INTO credit_card_statements 
-      (credit_card_id, period_start, period_end, due_date, total_amount, paid_amount, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *`,
+       (credit_card_id, period_start, period_end, due_date, total_amount, paid_amount, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
       [
         statement.credit_card_id,
         statement.period_start,
@@ -47,10 +48,11 @@ export class CreditCardStatementModel {
         statement.status || 'open'
       ]
     )
+    if (result.rowCount === 0) throw { status: 400, message: 'Statement creation failed' }
     return result.rows[0]
   }
 
-  static async update(id: number, statement: Partial<CreditCardStatement>): Promise<CreditCardStatement | null> {
+  static async update(id: number, statement: Partial<CreditCardStatement>): Promise<CreditCardStatement> {
     const result: QueryResult<CreditCardStatement> = await pool.query(
       `UPDATE credit_card_statements
        SET period_start = COALESCE($1, period_start),
@@ -74,13 +76,11 @@ export class CreditCardStatementModel {
       ]
     )
 
+    if (result.rowCount === 0) throw { status: 404, message: 'Statement not found' }
+
     const updated = result.rows[0]
-
-    if (updated && updated.status === 'paid') {
-      await this.markInstallmentsAsPaid(updated.id!)
-    }
-
-    return updated || null
+    if (updated.status === 'paid') await this.markInstallmentsAsPaid(updated.id!)
+    return updated
   }
 
   static async markInstallmentsAsPaid(statementId: number): Promise<void> {
@@ -92,9 +92,9 @@ export class CreditCardStatementModel {
     )
   }
 
-  static async delete(id: number): Promise<boolean> {
+  static async delete(id: number): Promise<void> {
     const result: QueryResult = await pool.query('DELETE FROM credit_card_statements WHERE id = $1', [id])
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Statement not found' }
   }
 
   static async findOrCreateForDate(creditCardId: number, dueDate: Date): Promise<CreditCardStatement> {
@@ -111,10 +111,7 @@ export class CreditCardStatementModel {
        LIMIT 1`,
       [creditCardId, dueDate]
     )
-
-    if (result.rows.length > 0) {
-      return result.rows[0]
-    }
+    if ((result.rowCount ?? 0) > 0) return result.rows[0]
 
     const insert: QueryResult<CreditCardStatement> = await pool.query(
       `INSERT INTO credit_card_statements 
@@ -124,6 +121,7 @@ export class CreditCardStatementModel {
       [creditCardId, start, end, dueDate]
     )
 
+    if (insert.rowCount === 0) throw { status: 400, message: 'Statement creation failed' }
     return insert.rows[0]
   }
 

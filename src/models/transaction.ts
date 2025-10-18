@@ -37,20 +37,24 @@ export class TransactionModel {
     return result.rows
   }
 
-  static async getById(id: number, userId: number): Promise<Transaction | null> {
+  static async getById(id: number, userId: number): Promise<Transaction> {
     const result: QueryResult<Transaction> = await pool.query(
       'SELECT * FROM transactions WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Transaction not found' }
+    return result.rows[0]
   }
 
   static async create(transaction: Transaction): Promise<Transaction> {
+    if (!transaction.amount || transaction.amount <= 0)
+      throw { status: 400, message: 'Amount must be greater than zero' }
+
     const result: QueryResult<Transaction> = await pool.query(
       `INSERT INTO transactions 
-      (user_id, account_id, credit_card_id, statement_id, category_id, payment_method, type, amount, total_amount, reimbursed_amount, shared, description, date, installments)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-      RETURNING *`,
+       (user_id, account_id, credit_card_id, statement_id, category_id, payment_method, type, amount, total_amount, reimbursed_amount, shared, description, date, installments)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       RETURNING *`,
       [
         transaction.user_id,
         transaction.account_id || null,
@@ -69,12 +73,11 @@ export class TransactionModel {
       ]
     )
 
+    if (result.rowCount === 0) throw { status: 400, message: 'Transaction creation failed' }
+
     const createdTransaction = result.rows[0]
 
-    if (
-      transaction.payment_method === 'credit_card' &&
-      (transaction.installments ?? 1) > 1
-    ) {
+    if (transaction.payment_method === 'credit_card' && (transaction.installments ?? 1) > 1) {
       await this.generateInstallments(createdTransaction)
     }
 
@@ -106,7 +109,7 @@ export class TransactionModel {
     }
   }
 
-  static async update(id: number, userId: number, transaction: Partial<Transaction>): Promise<Transaction | null> {
+  static async update(id: number, userId: number, transaction: Partial<Transaction>): Promise<Transaction> {
     const result: QueryResult<Transaction> = await pool.query(
       `UPDATE transactions
        SET account_id = $1,
@@ -144,22 +147,24 @@ export class TransactionModel {
         userId
       ]
     )
-    return result.rows[0] || null
+
+    if (result.rowCount === 0) throw { status: 404, message: 'Transaction not found' }
+    return result.rows[0]
   }
 
-  static async deactivate(id: number, userId: number): Promise<boolean> {
+  static async deactivate(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
-      'UPDATE transactions SET is_active = false WHERE id = $1 AND user_id = $2',
+      'UPDATE transactions SET is_active = FALSE WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Transaction not found' }
   }
 
-  static async restore(id: number, userId: number): Promise<boolean> {
+  static async restore(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
-      'UPDATE transactions SET is_active = true WHERE id = $1 AND user_id = $2',
+      'UPDATE transactions SET is_active = TRUE WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Transaction not found' }
   }
 }

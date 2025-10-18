@@ -19,12 +19,13 @@ export class CategoryModel {
     return result.rows
   }
 
-  static async getById(id: number, userId: number): Promise<Category | null> {
+  static async getById(id: number, userId: number): Promise<Category> {
     const result: QueryResult<Category> = await pool.query(
       'SELECT * FROM categories WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Category not found' }
+    return result.rows[0]
   }
 
   static async create(category: Category): Promise<Category> {
@@ -32,30 +33,32 @@ export class CategoryModel {
       'INSERT INTO categories (user_id, name, type, color) VALUES ($1, $2, $3, $4) RETURNING *',
       [category.user_id, category.name, category.type, category.color || null]
     )
+    if (result.rowCount === 0) throw { status: 400, message: 'Category creation failed' }
     return result.rows[0]
   }
 
-  static async update(id: number, userId: number, category: Partial<Category>): Promise<Category | null> {
+  static async update(id: number, userId: number, category: Partial<Category>): Promise<Category> {
     const result: QueryResult<Category> = await pool.query(
       'UPDATE categories SET name = $1, type = $2, color = $3, is_active = $4 WHERE id = $5 AND user_id = $6 RETURNING *',
       [category.name, category.type, category.color, category.is_active, id, userId]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Category not found' }
+    return result.rows[0]
   }
 
-  static async deactivate(id: number, userId: number): Promise<boolean> {
+  static async deactivate(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
       'UPDATE categories SET is_active = false WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Category not found' }
   }
 
-  static async restore(id: number, userId: number): Promise<boolean> {
+  static async restore(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
       'UPDATE categories SET is_active = true WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Category not found' }
   }
 }

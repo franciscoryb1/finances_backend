@@ -25,12 +25,13 @@ export class AccountModel {
     return result.rows
   }
 
-  static async getById(id: number, userId: number): Promise<Account | null> {
+  static async getById(id: number, userId: number): Promise<Account> {
     const result: QueryResult<Account> = await pool.query(
       'SELECT * FROM accounts WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Account not found' }
+    return result.rows[0]
   }
 
   static async create(account: Account): Promise<Account> {
@@ -45,10 +46,11 @@ export class AccountModel {
         account.currency || 'ARS'
       ]
     )
+    if (result.rowCount === 0) throw { status: 400, message: 'Account creation failed' }
     return result.rows[0]
   }
 
-  static async update(id: number, userId: number, account: Partial<Account>): Promise<Account | null> {
+  static async update(id: number, userId: number, account: Partial<Account>): Promise<Account> {
     const result: QueryResult<Account> = await pool.query(
       'UPDATE accounts SET bank_id = $1, account_number = $2, type = $3, balance = $4, currency = $5, is_active = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
       [
@@ -62,22 +64,23 @@ export class AccountModel {
         userId
       ]
     )
-    return result.rows[0] || null
+    if (result.rowCount === 0) throw { status: 404, message: 'Account not found' }
+    return result.rows[0]
   }
 
-  static async deactivate(id: number, userId: number): Promise<boolean> {
+  static async deactivate(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
       'UPDATE accounts SET is_active = false WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Account not found' }
   }
 
-  static async restore(id: number, userId: number): Promise<boolean> {
+  static async restore(id: number, userId: number): Promise<void> {
     const result: QueryResult = await pool.query(
       'UPDATE accounts SET is_active = true WHERE id = $1 AND user_id = $2',
       [id, userId]
     )
-    return (result.rowCount ?? 0) > 0
+    if (result.rowCount === 0) throw { status: 404, message: 'Account not found' }
   }
 }
