@@ -126,7 +126,8 @@ CREATE TABLE installments (
     amount DECIMAL(12,2) NOT NULL,
     due_date DATE NOT NULL,
     paid BOOLEAN DEFAULT FALSE,
-    is_active BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ==============================================
