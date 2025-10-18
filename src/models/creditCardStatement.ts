@@ -80,4 +80,34 @@ export class CreditCardStatementModel {
     const result: QueryResult = await pool.query('DELETE FROM credit_card_statements WHERE id = $1', [id])
     return (result.rowCount ?? 0) > 0
   }
+
+  static async findOrCreateForDate(creditCardId: number, dueDate: Date): Promise<CreditCardStatement> {
+    const start = new Date(dueDate)
+    start.setDate(1)
+    const end = new Date(start)
+    end.setMonth(start.getMonth() + 1)
+    end.setDate(0)
+
+    const result: QueryResult<CreditCardStatement> = await pool.query(
+      `SELECT * FROM credit_card_statements 
+       WHERE credit_card_id = $1 
+       AND due_date = $2 
+       LIMIT 1`,
+      [creditCardId, dueDate]
+    )
+
+    if (result.rows.length > 0) {
+      return result.rows[0]
+    }
+
+    const insert: QueryResult<CreditCardStatement> = await pool.query(
+      `INSERT INTO credit_card_statements 
+       (credit_card_id, period_start, period_end, due_date, status)
+       VALUES ($1, $2, $3, $4, 'open')
+       RETURNING *`,
+      [creditCardId, start, end, dueDate]
+    )
+
+    return insert.rows[0]
+  }
 }
