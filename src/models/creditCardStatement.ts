@@ -110,4 +110,23 @@ export class CreditCardStatementModel {
 
     return insert.rows[0]
   }
+
+  static async updateTotals(statementId: number): Promise<void> {
+    const result: QueryResult<{ sum: string }> = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS sum
+       FROM installments
+       WHERE statement_id = $1
+       AND is_active = TRUE`,
+      [statementId]
+    )
+
+    const total = parseFloat(result.rows[0].sum) || 0
+
+    await pool.query(
+      `UPDATE credit_card_statements
+       SET total_amount = $1
+       WHERE id = $2`,
+      [total, statementId]
+    )
+  }
 }
