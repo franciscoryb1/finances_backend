@@ -1,5 +1,6 @@
 import { pool } from '../config/db'
 import { QueryResult } from 'pg'
+import { CreditCardStatementModel } from './creditCardStatement'
 
 export interface Installment {
   id?: number
@@ -40,7 +41,15 @@ export class InstallmentModel {
         installment.paid || false
       ]
     )
-    return result.rows[0]
+
+    const created = result.rows[0]
+
+    // Actualizar total del resumen
+    if (created.statement_id) {
+      await CreditCardStatementModel.updateTotals(created.statement_id)
+    }
+
+    return created
   }
 
   static async markAsPaid(id: number): Promise<boolean> {
@@ -50,11 +59,21 @@ export class InstallmentModel {
 
   static async deactivate(id: number): Promise<boolean> {
     const result: QueryResult = await pool.query('UPDATE installments SET is_active = FALSE WHERE id = $1', [id])
+    if ((result.rowCount ?? 0) > 0) {
+      const statementResult = await pool.query('SELECT statement_id FROM installments WHERE id = $1', [id])
+      const statementId = statementResult.rows[0]?.statement_id
+      if (statementId) await CreditCardStatementModel.updateTotals(statementId)
+    }
     return (result.rowCount ?? 0) > 0
   }
 
   static async restore(id: number): Promise<boolean> {
     const result: QueryResult = await pool.query('UPDATE installments SET is_active = TRUE WHERE id = $1', [id])
+    if ((result.rowCount ?? 0) > 0) {
+      const statementResult = await pool.query('SELECT statement_id FROM installments WHERE id = $1', [id])
+      const statementId = statementResult.rows[0]?.statement_id
+      if (statementId) await CreditCardStatementModel.updateTotals(statementId)
+    }
     return (result.rowCount ?? 0) > 0
   }
 }
