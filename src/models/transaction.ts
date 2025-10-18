@@ -1,5 +1,7 @@
 import { pool } from '../config/db'
 import { QueryResult } from 'pg'
+import { InstallmentModel } from './installment'
+import { CreditCardStatementModel } from './creditCardStatement'
 
 export interface Transaction {
   id?: number
@@ -28,7 +30,7 @@ export class TransactionModel {
        LEFT JOIN categories c ON t.category_id = c.id
        LEFT JOIN accounts a ON t.account_id = a.id
        LEFT JOIN banks b ON a.bank_id = b.id
-       WHERE t.user_id = $1
+       WHERE t.user_id = $1 AND t.is_active = TRUE
        ORDER BY t.date DESC, t.id DESC`,
       [userId]
     )
@@ -66,7 +68,42 @@ export class TransactionModel {
         transaction.installments || 1
       ]
     )
-    return result.rows[0]
+
+    const createdTransaction = result.rows[0]
+
+    if (
+      transaction.payment_method === 'credit_card' &&
+      (transaction.installments ?? 1) > 1
+    ) {
+      await this.generateInstallments(createdTransaction)
+    }
+
+    return createdTransaction
+  }
+
+  private static async generateInstallments(transaction: Transaction) {
+    const total = transaction.amount
+    const count = transaction.installments ?? 1
+    const amountPerInstallment = total / count
+    const startDate = new Date(transaction.date)
+
+    for (let i = 1; i <= count; i++) {
+      const dueDate = new Date(startDate)
+      dueDate.setMonth(startDate.getMonth() + i)
+
+      const statement = await CreditCardStatementModel.findOrCreateForDate(
+        transaction.credit_card_id!,
+        dueDate
+      )
+
+      await InstallmentModel.create({
+        transaction_id: transaction.id!,
+        statement_id: statement.id,
+        installment_number: i,
+        amount: Number(amountPerInstallment.toFixed(2)),
+        due_date: dueDate
+      })
+    }
   }
 
   static async update(id: number, userId: number, transaction: Partial<Transaction>): Promise<Transaction | null> {
