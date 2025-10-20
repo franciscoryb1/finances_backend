@@ -1,16 +1,16 @@
 import { Router } from 'express'
 import { BankController } from '../controllers/bankController'
-import { verifyToken } from '../middleware/auth'
 import { validate } from '../middleware/validate'
 import { createBankValidator, updateBankValidator } from '../validators/bankValidator'
+import { verifyAuthCookie } from '../middleware/authCookie'
 
 const router = Router()
 
-router.get('/', verifyToken, BankController.getAll)
-router.get('/:id', verifyToken, BankController.getById)
-router.post('/', verifyToken, createBankValidator, validate, BankController.create)
-router.put('/:id', verifyToken, updateBankValidator, validate, BankController.update)
-router.delete('/:id', verifyToken, BankController.deactivate)
-router.patch('/:id/restore', verifyToken, BankController.restore)
+router.get('/', verifyAuthCookie, BankController.getAll)
+router.get('/:id', verifyAuthCookie, BankController.getById)
+router.post('/', verifyAuthCookie, createBankValidator, validate, BankController.create)
+router.put('/:id', verifyAuthCookie, updateBankValidator, validate, BankController.update)
+router.delete('/:id', verifyAuthCookie, BankController.deactivate)
+router.patch('/:id/restore', verifyAuthCookie, BankController.restore)
 
 export default router

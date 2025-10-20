@@ -1,16 +1,16 @@
 import { Router } from 'express'
 import { TransactionController } from '../controllers/transactionController'
-import { verifyToken } from '../middleware/auth'
 import { validate } from '../middleware/validate'
 import { createTransactionValidator, updateTransactionValidator } from '../validators/transactionValidator'
+import { verifyAuthCookie } from '../middleware/authCookie'
 
 const router = Router()
 
-router.get('/', verifyToken, TransactionController.getAll)
-router.get('/:id', verifyToken, TransactionController.getById)
-router.post('/', verifyToken, createTransactionValidator, validate, TransactionController.create)
-router.put('/:id', verifyToken, updateTransactionValidator, validate, TransactionController.update)
-router.delete('/:id', verifyToken, TransactionController.deactivate)
-router.patch('/:id/restore', verifyToken, TransactionController.restore)
+router.get('/', verifyAuthCookie, TransactionController.getAll)
+router.get('/:id', verifyAuthCookie, TransactionController.getById)
+router.post('/', verifyAuthCookie, createTransactionValidator, validate, TransactionController.create)
+router.put('/:id', verifyAuthCookie, updateTransactionValidator, validate, TransactionController.update)
+router.delete('/:id', verifyAuthCookie, TransactionController.deactivate)
+router.patch('/:id/restore', verifyAuthCookie, TransactionController.restore)
 
 export default router

@@ -1,15 +1,15 @@
 import { Router } from 'express'
 import { CreditCardStatementController } from '../controllers/creditCardStatementController'
-import { verifyToken } from '../middleware/auth'
 import { validate } from '../middleware/validate'
 import { createStatementValidator, updateStatementValidator } from '../validators/statementValidator'
+import { verifyAuthCookie } from '../middleware/authCookie'
 
 const router = Router()
 
-router.get('/:cardId', verifyToken, CreditCardStatementController.getAllByCard)
-router.get('/detail/:id', verifyToken, CreditCardStatementController.getById)
-router.post('/', verifyToken, createStatementValidator, validate, CreditCardStatementController.create)
-router.put('/:id', verifyToken, updateStatementValidator, validate, CreditCardStatementController.update)
-router.delete('/:id', verifyToken, CreditCardStatementController.delete)
+router.get('/:cardId', verifyAuthCookie, CreditCardStatementController.getAllByCard)
+router.get('/detail/:id', verifyAuthCookie, CreditCardStatementController.getById)
+router.post('/', verifyAuthCookie, createStatementValidator, validate, CreditCardStatementController.create)
+router.put('/:id', verifyAuthCookie, updateStatementValidator, validate, CreditCardStatementController.update)
+router.delete('/:id', verifyAuthCookie, CreditCardStatementController.delete)
 
 export default router
