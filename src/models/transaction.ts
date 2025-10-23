@@ -46,9 +46,17 @@ export class TransactionModel {
     return result.rows[0]
   }
 
+
   static async create(transaction: Transaction): Promise<Transaction> {
     if (!transaction.amount || transaction.amount <= 0)
       throw { status: 400, message: 'Amount must be greater than zero' }
+
+    transaction.date = new Date(transaction.date)
+    const periodDate = new Date(transaction.date.getFullYear(), transaction.date.getMonth(), 15)
+    const statement = await CreditCardStatementModel.findOrCreateForDate(
+      transaction.credit_card_id!,
+      periodDate
+    )
 
     const result: QueryResult<Transaction> = await pool.query(
       `INSERT INTO transactions 
@@ -59,7 +67,7 @@ export class TransactionModel {
         transaction.user_id,
         transaction.account_id || null,
         transaction.credit_card_id || null,
-        transaction.statement_id || null,
+        transaction.statement_id || (statement ? statement.id : null),
         transaction.category_id || null,
         transaction.payment_method,
         transaction.type,
@@ -80,6 +88,8 @@ export class TransactionModel {
     if (transaction.payment_method === 'credit_card' && (transaction.installments ?? 1) > 1) {
       await this.generateInstallments(createdTransaction)
     }
+    if (statement?.id)
+      CreditCardStatementModel.updateTotals(statement.id)
 
     return createdTransaction
   }
@@ -87,27 +97,42 @@ export class TransactionModel {
   private static async generateInstallments(transaction: Transaction) {
     const total = transaction.amount
     const count = transaction.installments ?? 1
-    const amountPerInstallment = total / count
-    const startDate = new Date(transaction.date)
+    const baseDate = new Date(transaction.date)
 
-    for (let i = 1; i <= count; i++) {
-      const dueDate = new Date(startDate)
-      dueDate.setMonth(startDate.getMonth() + i)
+    // Distribución con redondeo a 2 decimales, ajustando la última cuota para que sume el total
+    const raw = total / count
+    const amounts: number[] = []
+    let acc = 0
 
+    for (let i = 0; i < count; i++) {
+      // redondeo a 2 decimales
+      const rounded = Number(raw.toFixed(2))
+      amounts.push(rounded)
+      acc += rounded
+    }
+    // Ajuste por redondeo en la última cuota
+    const diff = Number((total - acc).toFixed(2))
+    amounts[count - 1] = Number((amounts[count - 1] + diff).toFixed(2))
+
+    for (let i = 0; i < count; i++) {
+      // La i=0 corresponde al MISMO mes de la transacción
+      const periodDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, 15) // cualquier día del mes sirve
       const statement = await CreditCardStatementModel.findOrCreateForDate(
         transaction.credit_card_id!,
-        dueDate
+        periodDate // pasamos una fecha "dentro del mes objetivo"
       )
 
       await InstallmentModel.create({
         transaction_id: transaction.id!,
         statement_id: statement.id,
-        installment_number: i,
-        amount: Number(amountPerInstallment.toFixed(2)),
-        due_date: dueDate
+        installment_number: i + 1,
+        amount: amounts[i],
+        // Podés usar el due_date del statement o el fin de mes:
+        due_date: statement.due_date,
       })
     }
   }
+
 
   static async update(id: number, userId: number, transaction: Partial<Transaction>): Promise<Transaction> {
     const result: QueryResult<Transaction> = await pool.query(
