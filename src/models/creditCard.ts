@@ -11,6 +11,8 @@ export interface CreditCard {
   balance?: number
   expiration_date?: Date
   is_active?: boolean
+  color?: string
+  last_four?: number
 }
 
 export class CreditCardModel {
@@ -32,6 +34,7 @@ export class CreditCardModel {
       [id, userId]
     )
     if (result.rowCount === 0) throw { status: 404, message: 'Credit card not found' }
+    console.log(result.rows[0]);
     return result.rows[0]
   }
 
