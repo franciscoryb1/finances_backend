@@ -2,6 +2,18 @@ import { Request, Response, NextFunction } from 'express'
 import { InstallmentModel } from '../models/installment'
 
 export class InstallmentController {
+
+  static async getAllByStatement(req: Request, res: Response, next: NextFunction) {
+    try {
+      const statementId = parseInt(req.params.statementId)
+      const installments = await InstallmentModel.getAllByStatement(statementId)
+
+      res.json(installments)
+    } catch (error) {
+      next(error)
+    }
+  }
+
   static async getAllByTransaction(req: Request, res: Response, next: NextFunction) {
     try {
       const transactionId = parseInt(req.params.transactionId)

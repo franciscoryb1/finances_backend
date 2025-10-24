@@ -22,6 +22,19 @@ export class InstallmentModel {
     return result.rows
   }
 
+  static async getAllByStatement(statementId: number): Promise<Installment[]> {
+    const result: QueryResult<Installment> = await pool.query(
+      'SELECT * FROM installments WHERE statement_id = $1',
+      [statementId]
+    )
+
+    return result.rows.map(i => ({
+      ...i,
+      amount: Number(i.amount)
+    }))
+  }
+
+
   static async getById(id: number): Promise<Installment> {
     const result: QueryResult<Installment> = await pool.query(
       'SELECT * FROM installments WHERE id = $1',

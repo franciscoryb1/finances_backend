@@ -7,6 +7,9 @@ import { verifyAuthCookie } from '../middleware/authCookie'
 const router = Router()
 
 router.get('/:transactionId', verifyAuthCookie, InstallmentController.getAllByTransaction)
+router.get('/statement/:statementId', verifyAuthCookie, InstallmentController.getAllByStatement)
+
+
 router.get('/detail/:id', verifyAuthCookie, InstallmentController.getById)
 router.post('/', verifyAuthCookie, createInstallmentValidator, validate, InstallmentController.create)
 router.patch('/:id/paid', verifyAuthCookie, InstallmentController.markAsPaid)
