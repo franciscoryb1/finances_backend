@@ -1,8 +1,20 @@
 import { Response, NextFunction } from 'express'
 import { TransactionModel } from '../models/transaction'
 import { AuthRequest } from '../middleware/auth'
+import { CreditCardStatementModel } from '../models/creditCardStatement'
 
 export class TransactionController {
+
+  static async getAllByStatement(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const statementId = parseInt(req.params.statementId)
+      const transactions = await TransactionModel.getAllByStatement(statementId)
+      res.json(transactions)
+    } catch (error) {
+      next(error)
+    }
+  }
+
   static async getAll(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const userId = req.user.id

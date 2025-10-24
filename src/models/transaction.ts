@@ -37,6 +37,20 @@ export class TransactionModel {
     return result.rows
   }
 
+  static async getAllByStatement(statementId: number): Promise<Transaction[]> {
+    const result: QueryResult<Transaction> = await pool.query(
+      `SELECT t.*, c.name AS category_name, b.name AS bank_name
+       FROM transactions t
+       LEFT JOIN categories c ON t.category_id = c.id
+       LEFT JOIN accounts a ON t.account_id = a.id
+       LEFT JOIN banks b ON a.bank_id = b.id
+       WHERE t.statement_id = $1 AND t.is_active = TRUE
+       ORDER BY t.date DESC, t.id DESC`,
+      [statementId]
+    )
+    return result.rows
+  }
+
   static async getById(id: number, userId: number): Promise<Transaction> {
     const result: QueryResult<Transaction> = await pool.query(
       'SELECT * FROM transactions WHERE id = $1 AND user_id = $2',
