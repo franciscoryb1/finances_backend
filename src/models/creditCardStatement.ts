@@ -17,7 +17,7 @@ export interface CreditCardStatement {
 export class CreditCardStatementModel {
   static async getAllByCard(creditCardId: number): Promise<CreditCardStatement[]> {
     const result: QueryResult<CreditCardStatement> = await pool.query(
-      'SELECT * FROM credit_card_statements WHERE credit_card_id = $1 ORDER BY period_end DESC',
+      'SELECT * FROM credit_card_statements WHERE credit_card_id = $1 ORDER BY period_start',
       [creditCardId]
     )
     return result.rows
@@ -143,10 +143,7 @@ export class CreditCardStatementModel {
        AND is_active = TRUE`,
       [statementId]
     )
-    console.log('installmentsResult:', installmentsResult);
-
     const installmentsTotal = parseFloat(installmentsResult.rows[0].sum) || 0
-    console.log('installmentsTotal:', installmentsTotal);
 
     // 2️⃣ Sumar todas las transacciones activas que pertenecen directamente al mismo statement
     const transactionsResult: QueryResult<{ sum: string }> = await pool.query(
